@@ -1,6 +1,6 @@
 import pygame
 import random
-from world import TILE_SIZE
+from settings import TILE_SIZE
 
 class Collectible(pygame.sprite.Sprite):
     def __init__(self, world):
