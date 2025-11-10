@@ -1,58 +1,85 @@
-# Tic Tac Toe Game
+from game_logic import TicTacToeGame
+from trophy_manager import TrophyManager
 
 def print_board(board):
     """Prints the Tic Tac Toe board."""
+    size = len(board)
     for row in board:
         print(" | ".join(row))
-        print("-" * 5)
+        print("-" * (size * 4 - 1))
 
-def check_win(board, player):
-    """Checks if a player has won."""
-    # Check rows
-    for row in board:
-        if all(s == player for s in row):
-            return True
-    # Check columns
-    for col in range(3):
-        if all(board[row][col] == player for row in range(3)):
-            return True
-    # Check diagonals
-    if all(board[i][i] == player for i in range(3)) or \
-       all(board[i][2 - i] == player for i in range(3)):
-        return True
-    return False
+def get_player_input(prompt):
+    """Gets and validates player input."""
+    while True:
+        try:
+            value = int(input(prompt))
+            return value
+        except ValueError:
+            print("Invalid input. Please enter a number.")
 
-def is_full(board):
-    """Checks if the board is full."""
-    return all(cell != ' ' for row in board for cell in row)
+def get_menu_choice(prompt, options):
+    """Gets and validates a menu choice."""
+    while True:
+        choice = input(prompt).lower()
+        if choice in options:
+            return choice
+        print(f"Invalid choice. Please select from: {', '.join(options)}")
 
 def main():
     """Main game loop."""
-    board = [[' ' for _ in range(3)] for _ in range(3)]
-    current_player = 'X'
+    trophy_manager = TrophyManager()
+
+    print("Welcome to Tic Tac Toe!")
+
+    game_mode = get_menu_choice("Select game mode (single/multi): ", ['single', 'multi'])
+
+    board_size_str = get_menu_choice("Select board size (3/5): ", ['3', '5'])
+    board_size = int(board_size_str)
+
+    difficulty = 'easy'
+    if game_mode == 'single':
+        difficulty = get_menu_choice("Select difficulty (easy/medium/hard): ", ['easy', 'medium', 'hard'])
+
+    game = TicTacToeGame(size=board_size)
 
     while True:
-        print_board(board)
-        try:
-            row = int(input(f"Player {current_player}, enter row (0-2): "))
-            col = int(input(f"Player {current_player}, enter col (0-2): "))
-        except ValueError:
-            print("Invalid input. Please enter a number.")
-            continue
+        print_board(game.board)
 
-        if 0 <= row <= 2 and 0 <= col <= 2 and board[row][col] == ' ':
-            board[row][col] = current_player
-            if check_win(board, current_player):
-                print_board(board)
-                print(f"Player {current_player} wins!")
+        is_computer_turn = (game_mode == 'single' and game.current_player == 'O')
+
+        if is_computer_turn:
+            print(f"Player O (Computer) is thinking...")
+            move = game.get_computer_move(difficulty)
+            if move:
+                row, col = move
+            else: # Should not happen if there are empty cells
+                print("Computer has no moves left.")
                 break
-            if is_full(board):
-                print_board(board)
+        else:
+            prompt = f"Player {game.current_player}, enter row (0-{board_size-1}): "
+            row = get_player_input(prompt)
+            prompt = f"Player {game.current_player}, enter col (0-{board_size-1}): "
+            col = get_player_input(prompt)
+
+        if game.make_move(row, col):
+            if game.check_win(game.current_player):
+                print_board(game.board)
+                winner = game.current_player
+                print(f"Player {winner} wins!")
+                if game_mode == 'single' and winner == 'X':
+                    trophy_manager.add_trophies(10)
+                    print("You earned 10 trophies!")
+                break
+
+            if game.is_full():
+                print_board(game.board)
                 print("It's a draw!")
                 break
-            current_player = 'O' if current_player == 'X' else 'X'
+
+            game.switch_player()
         else:
-            print("Invalid move. Try again.")
+            if not is_computer_turn:
+                print("Invalid move. Try again.")
 
 if __name__ == "__main__":
     main()
